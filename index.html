@@ -161,24 +161,64 @@
   .modal-save   { flex:2; border:none; border-radius:9px; padding:10px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; }
   .modal-save.green { background:linear-gradient(135deg,var(--green),var(--green-2)); }
   .modal-save.red   { background:linear-gradient(135deg,var(--red),#f97316); }
-  .mobile-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:8px 0 max(8px,env(safe-area-inset-bottom)); z-index:200; }
+  /* ── Mobile bottom nav ── */
+  .mobile-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:6px 0 max(10px,env(safe-area-inset-bottom)); z-index:200; }
   .mobile-nav-items { display:flex; justify-content:space-around; }
-  .mobile-nav-item  { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:var(--text-3); cursor:pointer; padding:4px 12px; }
+  .mobile-nav-item  { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:var(--text-3); cursor:pointer; padding:4px 16px; }
   .mobile-nav-item.active { color:var(--green); }
+  /* ── Mobile brand (hidden on desktop) ── */
+  .topbar-brand { display:none; align-items:center; gap:9px; }
+  .topbar-brand .logo-mini { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--green),var(--green-2)); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .topbar-brand .logo-mini-text { font-size:15px; font-weight:700; color:var(--text-1); }
+  /* ── Tablet ≤768px ── */
   @media (max-width:768px) {
     body { overflow:auto; height:auto; flex-direction:column; }
     .sidebar { display:none; }
     .mobile-nav { display:block; }
     .main-area { height:auto; }
-    .topbar { position:sticky; top:0; z-index:100; }
-    .content { padding:14px 14px 80px; }
-    .kpi-row { grid-template-columns:1fr 1fr; }
+    .topbar { position:sticky; top:0; z-index:100; padding:0 16px; height:50px; }
+    .search-box { display:none; }
+    .topbar-brand { display:flex; }
+    .topbar-right { gap:7px; }
+    .content { padding:16px 14px 90px; }
+    .page-header { align-items:center; margin-bottom:14px; }
+    .page-title { font-size:18px; }
+    .header-right { display:none; }
+    .kpi-row { grid-template-columns:1fr 1fr; gap:10px; }
     .main-grid { grid-template-columns:1fr; }
-    .modal { width:calc(100vw - 16px); border-radius:12px; }
+    .modal { width:calc(100vw - 16px); border-radius:14px; }
+    .modal-chips { gap:6px; }
+    .modal-chip { padding:6px 13px; font-size:12px; }
   }
+  /* ── Mobile ≤480px ── */
   @media (max-width:480px) {
-    .kpi-row { grid-template-columns:1fr; }
-    .kpi-value { font-size:20px; }
+    .content { padding:12px 12px 90px; }
+    .page-header { flex-direction:column; align-items:flex-start; gap:1px; margin-bottom:12px; }
+    .page-title { font-size:16px; }
+    .page-subtitle { display:none; }
+    /* Hero Cash Balance full-width + 3 compact metrics in one row */
+    .kpi-row { grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+    .kpi-row > .kpi-card:first-child { grid-column:1 / -1; }
+    /* Compact metric cards */
+    .kpi-row > .kpi-card:not(:first-child) { padding:10px 9px; }
+    .kpi-row > .kpi-card:not(:first-child) .kpi-header { margin-bottom:4px; }
+    .kpi-row > .kpi-card:not(:first-child) .kpi-icon { width:24px; height:24px; border-radius:6px; }
+    .kpi-row > .kpi-card:not(:first-child) .kpi-icon svg { width:12px; height:12px; }
+    .kpi-row > .kpi-card:not(:first-child) .kpi-title-row { gap:5px; }
+    .kpi-row > .kpi-card:not(:first-child) .kpi-label { font-size:9.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kpi-row > .kpi-card:not(:first-child) .kpi-value { font-size:15px; letter-spacing:-.3px; }
+    .kpi-row > .kpi-card:not(:first-child) .kpi-value .currency { font-size:10px; }
+    .kpi-row > .kpi-card:not(:first-child) .kpi-range,
+    .kpi-row > .kpi-card:not(:first-child) .kpi-delta { font-size:9px; margin-top:2px; line-height:1.2; }
+    .kpi-row > .kpi-card:not(:first-child) .kpi-range span,
+    .kpi-row > .kpi-card:not(:first-child) .delta-fixed { font-size:9px; }
+    .kpi-row > .kpi-card:not(:first-child) .kpi-menu { display:none; }
+    /* Cash Balance hero */
+    .kpi-row > .kpi-card:first-child .kpi-value { font-size:26px; }
+    /* Action buttons */
+    .btn-primary, .btn-secondary { padding:10px 0; font-size:12.5px; }
+    /* Chip selector wrap nicely */
+    .card-chips { grid-template-columns:repeat(3,1fr); gap:7px; }
   }
   </style>
 </head>
@@ -257,6 +297,12 @@
 </aside>
 <div class="main-area">
   <header class="topbar">
+    <div class="topbar-brand">
+      <div class="logo-mini">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      </div>
+      <span class="logo-mini-text">FinTrack</span>
+    </div>
     <div class="search-box">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       Search <span class="kbd">Cmd</span><span class="kbd">K</span>
