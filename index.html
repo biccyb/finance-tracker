@@ -161,6 +161,25 @@
   .modal-save   { flex:2; border:none; border-radius:9px; padding:10px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; }
   .modal-save.green { background:linear-gradient(135deg,var(--green),var(--green-2)); }
   .modal-save.red   { background:linear-gradient(135deg,var(--red),#f97316); }
+  .mobile-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:8px 0 max(8px,env(safe-area-inset-bottom)); z-index:200; }
+  .mobile-nav-items { display:flex; justify-content:space-around; }
+  .mobile-nav-item  { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:var(--text-3); cursor:pointer; padding:4px 12px; }
+  .mobile-nav-item.active { color:var(--green); }
+  @media (max-width:768px) {
+    body { overflow:auto; height:auto; flex-direction:column; }
+    .sidebar { display:none; }
+    .mobile-nav { display:block; }
+    .main-area { height:auto; }
+    .topbar { position:sticky; top:0; z-index:100; }
+    .content { padding:14px 14px 80px; }
+    .kpi-row { grid-template-columns:1fr 1fr; }
+    .main-grid { grid-template-columns:1fr; }
+    .modal { width:calc(100vw - 16px); border-radius:12px; }
+  }
+  @media (max-width:480px) {
+    .kpi-row { grid-template-columns:1fr; }
+    .kpi-value { font-size:20px; }
+  }
   </style>
 </head>
 <body>
@@ -852,5 +871,25 @@ const LOGOS = {
     });
   });
   </script>
+  <nav class="mobile-nav">
+    <div class="mobile-nav-items">
+      <div class="mobile-nav-item active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="mobile-nav-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Cards
+      </div>
+      <div class="mobile-nav-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        Expenses
+      </div>
+      <div class="mobile-nav-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Income
+      </div>
+    </div>
+  </nav>
 </body>
 </html>
