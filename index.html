@@ -5,11 +5,179 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FinTrack</title>
   <style>
-    /* populated in Task 3 */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg:#f5f6fa; --surface:#fff; --border:#ebebf0; --border-light:#f0f0f5;
+      --text-1:#1a1a2e; --text-2:#64748b; --text-3:#94a3b8; --text-4:#b0b7c3;
+      --green:#16a34a; --green-2:#22c55e; --green-tint:#f0fdf4; --green-border:#dcfce7;
+      --purple:#a855f7; --red:#ef4444; --amber:#f59e0b;
+      --radius-card:13px; --radius-input:9px;
+      --sidebar-w:230px; --topbar-h:54px;
+    }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif; background:var(--bg); color:var(--text-1); display:flex; height:100vh; overflow:hidden; font-size:13px; }
+    svg { display:block; flex-shrink:0; }
+
+    /* Sidebar */
+    .sidebar { width:var(--sidebar-w); min-width:var(--sidebar-w); background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; height:100vh; overflow-y:auto; }
+    .sidebar-logo { display:flex; align-items:center; gap:9px; padding:16px 16px 13px; border-bottom:1px solid var(--border-light); }
+    .logo-icon { width:32px; height:32px; border-radius:9px; background:linear-gradient(135deg,var(--green),var(--green-2)); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .logo-text { font-size:15px; font-weight:700; }
+    .collapse-btn { margin-left:auto; width:26px; height:26px; border:1px solid #e8e8f0; border-radius:6px; background:var(--surface); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-3); }
+    .sidebar-section { padding:12px 8px 2px; }
+    .sidebar-label { font-size:10px; font-weight:600; color:var(--text-4); letter-spacing:.08em; text-transform:uppercase; padding:0 8px; margin-bottom:3px; }
+    .nav-item { display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px; cursor:pointer; color:var(--text-2); font-size:12.5px; font-weight:500; margin-bottom:1px; position:relative; }
+    .nav-item:hover,.nav-item.active { background:var(--green-tint); color:var(--green); }
+    .nav-item.active { font-weight:600; }
+    .nav-item.active::before { content:''; position:absolute; left:-8px; top:50%; transform:translateY(-50%); width:3px; height:18px; background:var(--green); border-radius:0 3px 3px 0; }
+    .nav-badge { margin-left:auto; background:var(--green); color:#fff; font-size:9px; font-weight:600; border-radius:20px; padding:1px 6px; }
+    .nav-badge.gray { background:#eef0f5; color:var(--text-2); }
+    .sidebar-bottom { margin-top:auto; padding:8px; border-top:1px solid var(--border-light); }
+
+    /* Topbar */
+    .main-area { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    .topbar { background:var(--surface); border-bottom:1px solid var(--border); padding:0 22px; height:var(--topbar-h); display:flex; align-items:center; gap:12px; flex-shrink:0; }
+    .search-box { display:flex; align-items:center; gap:7px; background:var(--bg); border:1px solid #e8eaf0; border-radius:8px; padding:7px 12px; width:230px; color:var(--text-3); font-size:12px; }
+    .kbd { background:#e8eaf0; border-radius:4px; padding:1px 5px; font-size:9px; color:var(--text-3); }
+    .topbar-right { margin-left:auto; display:flex; align-items:center; gap:9px; }
+    .topbar-icon { width:32px; height:32px; border-radius:8px; border:1px solid #e8eaf0; background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-2); position:relative; }
+    .notif-dot { position:absolute; top:6px; right:6px; width:6px; height:6px; background:var(--red); border-radius:50%; border:2px solid #fff; }
+    .avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--green),#4ade80); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:12px; cursor:pointer; }
+
+    /* Content */
+    .content { flex:1; overflow-y:auto; padding:20px 22px; }
+    .page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; }
+    .page-title { font-size:20px; font-weight:700; }
+    .page-subtitle { font-size:12px; color:var(--text-3); margin-top:2px; }
+    .header-right { display:flex; align-items:center; gap:9px; }
+    .date-chip { display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid #e8eaf0; border-radius:8px; padding:7px 13px; font-size:12px; color:var(--text-2); }
+    .export-btn { background:var(--text-1); color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; }
+
+    /* Cards */
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px 18px; }
+    .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:13px; }
+    .card-title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:7px; }
+    .dots-menu { color:#c0c8d8; cursor:pointer; letter-spacing:2px; font-size:14px; }
+    .section-div { display:flex; align-items:center; gap:8px; margin:8px 0; }
+    .section-div span { font-size:10px; font-weight:600; color:var(--text-4); text-transform:uppercase; letter-spacing:.06em; white-space:nowrap; }
+    .section-div::before,.section-div::after { content:''; flex:1; height:1px; background:var(--border-light); }
+
+    /* Shared form elements */
+    .log-input { background:var(--bg); border:1px solid #e8eaf0; border-radius:var(--radius-input); padding:7px 10px; font-size:12px; color:var(--text-1); outline:none; box-sizing:border-box; }
+    .log-input:focus { border-color:var(--green); background:var(--surface); }
+    .log-btn { background:linear-gradient(135deg,var(--green),var(--green-2)); color:#fff; border:none; border-radius:8px; padding:7px 13px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0; }
   </style>
 </head>
 <body>
-  <!-- HTML populated across Tasks 3-9 -->
+  <aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    </div>
+    <span class="logo-text">FinTrack</span>
+    <button class="collapse-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7"/><path d="M18 19l-7-7 7-7"/></svg>
+    </button>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main Menu</div>
+    <div class="nav-item active">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Analytics
+    </div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Transactions
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Credit Cards</div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      CC Installments <span class="nav-badge">9</span>
+    </div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      Subscriptions <span class="nav-badge gray">2</span>
+    </div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      CC Spending
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Expenses</div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Fixed Expenses
+    </div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Food &amp; Variable
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Income</div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Income Sources
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">General</div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      Settings
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Log out
+    </div>
+  </div>
+</aside>
+<div class="main-area">
+  <header class="topbar">
+    <div class="search-box">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Search <span class="kbd">Cmd</span><span class="kbd">K</span>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="topbar-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <div class="notif-dot"></div>
+      </div>
+      <div class="avatar">B</div>
+    </div>
+  </header>
+  <main class="content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Welcome back 👋</div>
+        <div class="page-subtitle">Monitor and control what happens with your money today.</div>
+      </div>
+      <div class="header-right">
+        <div class="date-chip">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span id="page-date"></span>
+        </div>
+        <button class="export-btn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Export
+        </button>
+      </div>
+    </div>
+    <!-- KPI ROW inserted in Task 4 -->
+    <!-- MAIN GRID inserted in Tasks 5-8 -->
+  </main>
+</div>
 
   <!-- LOGO CONSTANTS — generated by build-logos.py, paste output here -->
   <script id="logos">
