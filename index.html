@@ -131,6 +131,14 @@
   .income-amount.variable { color:var(--amber); }
   .income-amount.peptide  { color:var(--purple); }
   .income-amount.placeholder { color:var(--text-4); font-weight:500; }
+  .expense-item { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--bg); }
+  .expense-item:last-child { border-bottom:none; }
+  .expense-left { display:flex; align-items:center; gap:9px; }
+  .expense-icon { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .expense-name { font-size:12px; font-weight:600; }
+  .expense-sub  { font-size:10px; color:var(--text-3); }
+  .expense-amount { font-size:12px; font-weight:700; color:var(--red); }
+  .sub-logo { width:28px; height:28px; border-radius:7px; object-fit:contain; padding:3px; background:#f5f5f5; }
   </style>
 </head>
 <body>
@@ -402,7 +410,19 @@
           </div>
         </div>
 
-        <!-- Task 8 card goes here -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              Fixed &amp; Recurring
+            </div>
+            <span style="font-size:12px;font-weight:700;color:var(--red);" id="fixed-total-display">-</span>
+          </div>
+          <div class="section-div"><span>Household</span></div>
+          <div id="fixed-household"></div>
+          <div class="section-div"><span>Subscriptions</span></div>
+          <div id="fixed-subscriptions"></div>
+        </div>
       </div>
     </div>
   </main>
@@ -603,6 +623,35 @@ const LOGOS = {
     el('chart-may-bar').style.height = height + 'px';
     el('chart-may-tip').textContent  = '\u0e3f' + fmt(total);
   }
+
+  const EXPENSE_ICONS = {
+    'Maid Salary': { bg:'#fef9e7', stroke:'#d97706', path:'<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
+    'Electricity': { bg:'#fff7ed', stroke:'#ea580c', path:'<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>' },
+    'Water Bill':  { bg:'#eff6ff', stroke:'#3b82f6', path:'<path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/>' },
+    'Phone Bill':  { bg:'#f0fdf4', stroke:'#16a34a', path:'<rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>' },
+    'Wifi Bill':   { bg:'#f5f3ff', stroke:'#7c3aed', path:'<path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>' },
+  };
+
+  function expenseItemHTML(item) {
+    const sub = item.name === 'Electricity' ? '~\u0e3f4,000 avg' : 'Monthly';
+    if (item.category === 'subscription') {
+      const logoKey = item.name === 'YouTube Premium' ? 'YOUTUBE' : 'ICLOUD';
+      return '<div class="expense-item"><div class="expense-left"><img src="' + LOGOS[logoKey] + '" class="sub-logo" alt="' + item.name + '" /><div><div class="expense-name">' + item.name + '</div><div class="expense-sub">Renews monthly</div></div></div><div class="expense-amount">\u0e3f' + fmt(item.amount) + '</div></div>';
+    }
+    const icon = EXPENSE_ICONS[item.name] || { bg:'#f5f6fa', stroke:'#64748b', path:'' };
+    const svg  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + icon.stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + icon.path + '</svg>';
+    return '<div class="expense-item"><div class="expense-left"><div class="expense-icon" style="background:' + icon.bg + ';">' + svg + '</div><div><div class="expense-name">' + item.name + '</div><div class="expense-sub">' + sub + '</div></div></div><div class="expense-amount">\u0e3f' + fmt(item.amount) + '</div></div>';
+  }
+
+  function renderFixedExpenses() {
+    const fixed        = getData(KEYS.FIXED_EXPENSES) || [];
+    const household    = fixed.filter(e => e.category === 'household');
+    const subscription = fixed.filter(e => e.category === 'subscription');
+    const total        = fixed.reduce((s,e) => s + e.amount, 0);
+    el('fixed-household').innerHTML    = household.map(expenseItemHTML).join('');
+    el('fixed-subscriptions').innerHTML = subscription.map(expenseItemHTML).join('');
+    el('fixed-total-display').textContent = '\u0e3f' + fmt(total) + '/mo';
+  }
   </script>
 
   <!-- APP INIT — Task 10 -->
@@ -620,7 +669,8 @@ const LOGOS = {
     renderInstallments();
     renderIncomeSources();
     renderChart();
-    // further calls added in Tasks 8-11
+    renderFixedExpenses();
+    // further calls added in Tasks 9-11
   });
   </script>
 </body>
