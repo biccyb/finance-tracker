@@ -1115,7 +1115,10 @@ const LOGOS = {
     const btn = document.querySelector('#auth-overlay .auth-btn');
     btn.textContent = 'Sending…';
     btn.disabled = true;
-    const { error } = await sb.auth.signInWithOtp({ email });
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    });
     btn.textContent = 'Send Magic Link';
     btn.disabled = false;
     if (error) { el('auth-error').textContent = error.message; return; }
