@@ -65,6 +65,30 @@
     .log-input { background:var(--bg); border:1px solid #e8eaf0; border-radius:var(--radius-input); padding:7px 10px; font-size:12px; color:var(--text-1); outline:none; box-sizing:border-box; }
     .log-input:focus { border-color:var(--green); background:var(--surface); }
     .log-btn { background:linear-gradient(135deg,var(--green),var(--green-2)); color:#fff; border:none; border-radius:8px; padding:7px 13px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+
+    .kpi-row { display:grid; grid-template-columns:1.3fr 1fr 1fr 1fr; gap:12px; margin-bottom:16px; }
+    .kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px 18px; }
+    .kpi-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
+    .kpi-title-row { display:flex; align-items:center; gap:8px; }
+    .kpi-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; }
+    .kpi-icon.green { background:#f0fdf4; } .kpi-icon.red { background:#fff1f2; }
+    .kpi-icon.blue  { background:#eff6ff; } .kpi-icon.amber { background:#fffbeb; }
+    .kpi-label { font-size:13px; font-weight:600; }
+    .kpi-menu  { color:#c0c8d8; cursor:pointer; letter-spacing:2px; }
+    .kpi-value { font-size:24px; font-weight:800; letter-spacing:-.5px; }
+    .kpi-value .currency { font-size:14px; font-weight:600; color:var(--text-3); }
+    .kpi-range { font-size:11px; color:var(--text-3); margin-top:4px; }
+    .kpi-range span { color:var(--green); font-weight:600; }
+    .kpi-delta { font-size:11px; color:var(--text-3); margin-top:4px; }
+    .delta-fixed { color:var(--red); font-weight:600; }
+    .balance-actions { display:flex; gap:8px; margin-top:12px; }
+    .btn-primary { flex:1; background:linear-gradient(135deg,var(--green),var(--green-2)); color:#fff; border:none; padding:8px 0; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; }
+    .btn-secondary { flex:1; background:var(--bg); color:var(--text-1); border:1px solid #e8eaf0; padding:8px 0; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; }
+    .adjusted-badge { font-size:10px; color:var(--amber); font-weight:600; background:#fffbeb; border:1px solid #fde68a; border-radius:20px; padding:1px 7px; display:none; cursor:pointer; }
+    .adjusted-badge.show { display:inline; }
+    .adjust-trigger { font-size:10px; font-weight:600; color:var(--green); background:var(--green-tint); border:1px solid var(--green-border); border-radius:6px; padding:2px 7px; cursor:pointer; white-space:nowrap; }
+    .adjust-row { display:none; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-light); }
+    .adjust-row.open { display:flex; }
   </style>
 </head>
 <body>
@@ -174,7 +198,86 @@
         </button>
       </div>
     </div>
-    <!-- KPI ROW inserted in Task 4 -->
+    <div class="kpi-row">
+      <!-- Cash Balance -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <div class="kpi-title-row">
+            <div class="kpi-icon green">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </div>
+            <span class="kpi-label">Cash Balance</span>
+          </div>
+          <span style="font-size:11px;color:var(--text-3);">THB</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+          <div class="kpi-value"><span class="currency">฿</span><span id="kpi-cash-balance">—</span></div>
+          <button class="adjusted-badge" id="adjusted-badge" onclick="toggleAdjust()">adjusted ✎</button>
+          <button class="adjust-trigger" onclick="toggleAdjust()">Adjust ✎</button>
+        </div>
+        <div class="kpi-range">Salary + logged income − fixed costs</div>
+        <div class="balance-actions">
+          <button class="btn-primary" onclick="openModal('income')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Income
+          </button>
+          <button class="btn-secondary" onclick="openModal('expense')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Expense
+          </button>
+        </div>
+        <div class="adjust-row" id="adjust-row">
+          <input class="log-input" id="balance-adjust-input" type="number" placeholder="Set actual balance (฿)" style="flex:1;" />
+          <button class="log-btn" onclick="applyAdjust()">Set</button>
+          <button onclick="toggleAdjust()" style="background:none;border:none;cursor:pointer;color:var(--text-3);font-size:18px;line-height:1;">x</button>
+        </div>
+      </div>
+
+      <!-- Total Expenses -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <div class="kpi-title-row">
+            <div class="kpi-icon red">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <span class="kpi-label">Total Expenses</span>
+          </div>
+          <span class="kpi-menu">...</span>
+        </div>
+        <div class="kpi-value"><span class="currency">฿</span><span id="kpi-total-expenses">—</span></div>
+        <div class="kpi-delta"><span class="delta-fixed">Fixed</span> · excl. food &amp; misc</div>
+      </div>
+
+      <!-- Monthly Income -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <div class="kpi-title-row">
+            <div class="kpi-icon blue">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <span class="kpi-label">Monthly Income</span>
+          </div>
+          <span class="kpi-menu">...</span>
+        </div>
+        <div class="kpi-value"><span class="currency">฿</span><span id="kpi-monthly-income">—</span></div>
+        <div class="kpi-range">Salary + <span>variable</span></div>
+      </div>
+
+      <!-- CC Installments -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <div class="kpi-title-row">
+            <div class="kpi-icon amber">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </div>
+            <span class="kpi-label">CC Installments</span>
+          </div>
+          <span class="kpi-menu">...</span>
+        </div>
+        <div class="kpi-value"><span class="currency">฿</span><span id="kpi-cc-installments">—</span></div>
+        <div class="kpi-range">Across <span id="kpi-cc-count">3 cards · 9 plans</span></div>
+      </div>
+    </div>
     <!-- MAIN GRID inserted in Tasks 5-8 -->
   </main>
 </div>
@@ -274,10 +377,44 @@
 
   <!-- RENDER LAYER — Tasks 4-9 -->
   <script id="render-layer">
+  function el(id) { return document.getElementById(id); }
+  function fmt(n) { return Math.abs(Math.round(n)).toLocaleString('en-US'); }
+
+  function renderKPIs() {
+    const month        = getMonthKey();
+    const installments = getData(KEYS.INSTALLMENTS)   || [];
+    const fixed        = getData(KEYS.FIXED_EXPENSES) || [];
+    const incomeLog    = getIncomeLog(month);
+    const settings     = getSettings();
+
+    el('kpi-cash-balance').textContent     = fmt(computeCashBalance(month));
+    el('adjusted-badge').className = 'adjusted-badge' + (settings.balanceOverride != null ? ' show' : '');
+
+    const fixedTotal = fixed.reduce((s,e) => s + e.amount, 0);
+    const ccTotal    = installments.reduce((s,p) => s + p.monthly, 0);
+    el('kpi-total-expenses').textContent   = fmt(fixedTotal + ccTotal);
+
+    const varIncome = incomeLog.reduce((s,e) => s + e.amount, 0);
+    el('kpi-monthly-income').textContent   = fmt(SALARY + varIncome);
+    el('kpi-cc-installments').textContent  = fmt(ccTotal);
+    el('kpi-cc-count').textContent = '3 cards · ' + installments.length + ' plans';
+  }
   </script>
 
   <!-- APP INIT — Task 10 -->
   <script id="app">
+  function renderDate() {
+    el('page-date').textContent = new Date().toLocaleDateString('en-GB', {
+      weekday:'short', day:'numeric', month:'long', year:'numeric'
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    seedIfEmpty();
+    renderDate();
+    renderKPIs();
+    // further calls added in Tasks 5-11
+  });
   </script>
 </body>
 </html>
