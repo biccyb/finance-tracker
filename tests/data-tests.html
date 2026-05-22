@@ -13,21 +13,29 @@
 <h2>FinTrack Data Layer Tests</h2>
 <pre id="output">Running...</pre>
 <script>
-// localStorage mock
-const _store = {};
-const localStorage = {
-  getItem:    k =>    _store[k] ?? null,
-  setItem:    (k,v) => { _store[k] = v; },
-  removeItem: k =>    { delete _store[k]; },
-  clear:      () =>   { Object.keys(_store).forEach(k => delete _store[k]); }
+// ── In-memory cache (mirrors supabase-layer _db) ──────────────────────────────
+const _db = {
+  incomeLog:     [],
+  expenseLog:    [],
+  installments:  [],
+  fixedExpenses: [],
+  settings:      null,
 };
+
+function resetDb(overrides = {}) {
+  _db.incomeLog     = overrides.incomeLog     || [];
+  _db.expenseLog    = overrides.expenseLog    || [];
+  _db.installments  = overrides.installments  || JSON.parse(JSON.stringify(SEED_INSTALLMENTS));
+  _db.fixedExpenses = overrides.fixedExpenses || JSON.parse(JSON.stringify(SEED_FIXED_EXPENSES));
+  _db.settings      = overrides.settings      !== undefined ? overrides.settings : null;
+}
 
 const KEYS = {
   INCOME_LOG:     'fintrack_income_log',
   EXPENSE_LOG:    'fintrack_expense_log',
   INSTALLMENTS:   'fintrack_installments',
   FIXED_EXPENSES: 'fintrack_fixed_expenses',
-  SETTINGS:       'fintrack_settings'
+  SETTINGS:       'fintrack_settings',
 };
 
 const SEED_INSTALLMENTS = [
@@ -52,15 +60,15 @@ const SEED_FIXED_EXPENSES = [
   { id:'f7', name:'iCloud Storage',   amount:99,   category:'subscription' },
 ];
 
+// ── Data layer (mirrors index.html data-layer, reads from _db) ────────────────
 function getData(key) {
-  try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
-}
-function setData(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-function seedIfEmpty() {
-  if (!getData(KEYS.INSTALLMENTS))   setData(KEYS.INSTALLMENTS,   SEED_INSTALLMENTS);
-  if (!getData(KEYS.FIXED_EXPENSES)) setData(KEYS.FIXED_EXPENSES, SEED_FIXED_EXPENSES);
+  switch (key) {
+    case KEYS.INCOME_LOG:     return _db.incomeLog;
+    case KEYS.EXPENSE_LOG:    return _db.expenseLog;
+    case KEYS.INSTALLMENTS:   return _db.installments;
+    case KEYS.FIXED_EXPENSES: return _db.fixedExpenses;
+    default: return null;
+  }
 }
 function getMonthKey(date = new Date()) {
   return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
@@ -69,95 +77,121 @@ function todayISO() {
   return new Date().toISOString().split('T')[0];
 }
 function getIncomeLog(month = getMonthKey()) {
-  return (getData(KEYS.INCOME_LOG) || []).filter(e => e.date.startsWith(month));
+  return _db.incomeLog.filter(e => e.date.startsWith(month));
 }
 function getExpenseLog(month = getMonthKey()) {
-  return (getData(KEYS.EXPENSE_LOG) || []).filter(e => e.date.startsWith(month));
-}
-function addIncomeEntry(source, amount, date, note = '') {
-  const log = getData(KEYS.INCOME_LOG) || [];
-  log.push({ id: crypto.randomUUID(), source, amount, date, note });
-  setData(KEYS.INCOME_LOG, log);
-  clearBalanceOverride();
-}
-function addExpenseEntry(type, amount, date, note = '') {
-  const log = getData(KEYS.EXPENSE_LOG) || [];
-  log.push({ id: crypto.randomUUID(), type, amount, date, note });
-  setData(KEYS.EXPENSE_LOG, log);
-  clearBalanceOverride();
+  return _db.expenseLog.filter(e => e.date.startsWith(month));
 }
 function getSettings() {
-  return getData(KEYS.SETTINGS) || { currency:'THB', monthStart:1, userName:'B' };
+  const s = _db.settings;
+  if (!s) return { currency:'THB', monthStart:1, userName:'B' };
+  return {
+    currency:        s.currency    || 'THB',
+    monthStart:      s.month_start || 1,
+    userName:        s.username    || 'B',
+    balanceOverride: s.balance_override != null ? s.balance_override : undefined,
+  };
 }
-function setBalanceOverride(amount) {
-  const s = getSettings(); s.balanceOverride = amount; setData(KEYS.SETTINGS, s);
-}
-function clearBalanceOverride() {
-  const s = getSettings(); delete s.balanceOverride; setData(KEYS.SETTINGS, s);
-}
-
 const SALARY = 30000;
 function computeCashBalance(month = getMonthKey()) {
   const settings = getSettings();
   if (settings.balanceOverride != null) return settings.balanceOverride;
-  const incomeTotal  = getIncomeLog(month).reduce((s,e) => s + e.amount, 0);
-  const expenseTotal = getExpenseLog(month).reduce((s,e) => s + e.amount, 0);
-  const fixedTotal   = (getData(KEYS.FIXED_EXPENSES) || []).reduce((s,e) => s + e.amount, 0);
-  const ccTotal      = (getData(KEYS.INSTALLMENTS)   || []).reduce((s,p) => s + p.monthly, 0);
+  const incomeTotal  = getIncomeLog(month).reduce((s, e) => s + e.amount, 0);
+  const expenseTotal = getExpenseLog(month).reduce((s, e) => s + e.amount, 0);
+  const fixedTotal   = _db.fixedExpenses.reduce((s, e) => s + e.amount, 0);
+  const ccTotal      = _db.installments.reduce((s, p) => s + p.monthly, 0);
   return SALARY + incomeTotal - fixedTotal - ccTotal - expenseTotal;
 }
 
-// Test runner
+// ── Test runner ───────────────────────────────────────────────────────────────
 let passed = 0, failed = 0;
 const lines = [];
 function test(name, fn) {
-  localStorage.clear();
+  resetDb();
   try { fn(); passed++; lines.push('<span class="pass">OK ' + name + '</span>'); }
   catch(e) { failed++; lines.push('<span class="fail">FAIL ' + name + ': ' + e.message + '</span>'); }
 }
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
 
-test('seedIfEmpty populates 9 installments', () => {
-  seedIfEmpty();
-  assert(getData(KEYS.INSTALLMENTS).length === 9, 'got ' + getData(KEYS.INSTALLMENTS).length);
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+test('resetDb seeds 9 installments', () => {
+  assert(_db.installments.length === 9, 'got ' + _db.installments.length);
 });
-test('seedIfEmpty populates 7 fixed expenses', () => {
-  seedIfEmpty();
-  assert(getData(KEYS.FIXED_EXPENSES).length === 7, 'got ' + getData(KEYS.FIXED_EXPENSES).length);
+
+test('resetDb seeds 7 fixed expenses', () => {
+  assert(_db.fixedExpenses.length === 7, 'got ' + _db.fixedExpenses.length);
 });
-test('seedIfEmpty does not overwrite existing data', () => {
-  setData(KEYS.INSTALLMENTS, [{ id:'x', name:'custom', card:'UOB', monthly:999, paid:1, total:5 }]);
-  seedIfEmpty();
-  assert(getData(KEYS.INSTALLMENTS).length === 1, 'overwrote existing data');
+
+test('resetDb with override keeps custom installments', () => {
+  resetDb({ installments: [{ id:'x', name:'custom', card:'UOB', monthly:999, paid:1, total:5 }] });
+  assert(_db.installments.length === 1, 'got ' + _db.installments.length);
 });
+
 test('getMonthKey returns YYYY-MM', () => {
   assert(getMonthKey(new Date('2026-05-22')) === '2026-05', 'got ' + getMonthKey(new Date('2026-05-22')));
 });
-test('addIncomeEntry saves to log', () => {
-  addIncomeEntry('BIOPOX', 7500, '2026-05-18', 'batch 1');
-  const log = getData(KEYS.INCOME_LOG);
-  assert(log.length === 1);
-  assert(log[0].source === 'BIOPOX');
-  assert(log[0].amount === 7500);
+
+test('todayISO returns ISO date string', () => {
+  assert(/^\d{4}-\d{2}-\d{2}$/.test(todayISO()), 'got ' + todayISO());
 });
+
+test('getData returns incomeLog from _db', () => {
+  _db.incomeLog = [{ id:'a', source:'BIOPOX', amount:7500, date:'2026-05-18', note:'' }];
+  const result = getData(KEYS.INCOME_LOG);
+  assert(result.length === 1 && result[0].source === 'BIOPOX');
+});
+
 test('getIncomeLog filters by month', () => {
-  addIncomeEntry('BIOPOX', 7500, '2026-05-18');
-  addIncomeEntry('Peptide', 12000, '2026-04-10');
+  _db.incomeLog = [
+    { id:'a', source:'BIOPOX',  amount:7500,  date:'2026-05-18', note:'' },
+    { id:'b', source:'Peptide', amount:12000, date:'2026-04-10', note:'' },
+  ];
   const may = getIncomeLog('2026-05');
   assert(may.length === 1, 'expected 1, got ' + may.length);
   assert(may[0].source === 'BIOPOX');
 });
-test('addExpenseEntry saves to log', () => {
-  addExpenseEntry('Dining Out', 450, '2026-05-21', 'lunch');
-  const log = getData(KEYS.EXPENSE_LOG);
-  assert(log.length === 1);
-  assert(log[0].type === 'Dining Out');
-  assert(log[0].amount === 450);
+
+test('getExpenseLog filters by month', () => {
+  _db.expenseLog = [
+    { id:'a', type:'Dining Out', amount:450, date:'2026-05-21', note:'' },
+    { id:'b', type:'Shopping',   amount:999, date:'2026-04-01', note:'' },
+  ];
+  const may = getExpenseLog('2026-05');
+  assert(may.length === 1, 'expected 1, got ' + may.length);
+  assert(may[0].type === 'Dining Out');
 });
+
+test('getSettings returns defaults when _db.settings is null', () => {
+  _db.settings = null;
+  const s = getSettings();
+  assert(s.currency === 'THB' && s.monthStart === 1 && s.userName === 'B');
+  assert(s.balanceOverride === undefined, 'expected undefined');
+});
+
+test('getSettings normalises snake_case from Supabase', () => {
+  _db.settings = { currency:'THB', month_start:1, username:'B', balance_override:null };
+  const s = getSettings();
+  assert(s.monthStart === 1, 'monthStart mapping failed');
+  assert(s.userName === 'B', 'userName mapping failed');
+  assert(s.balanceOverride === undefined, 'null override should map to undefined');
+});
+
+test('getSettings exposes balance_override as balanceOverride when set', () => {
+  _db.settings = { currency:'THB', month_start:1, username:'B', balance_override:15000 };
+  const s = getSettings();
+  assert(s.balanceOverride === 15000, 'expected 15000, got ' + s.balanceOverride);
+});
+
+test('getSettings treats balance_override:0 as set (not falsy bypass)', () => {
+  _db.settings = { currency:'THB', month_start:1, username:'B', balance_override:0 };
+  const s = getSettings();
+  assert(s.balanceOverride === 0, 'expected 0, got ' + s.balanceOverride);
+});
+
 test('computeCashBalance: salary + income - fixed - cc - expenses', () => {
-  seedIfEmpty();
-  addIncomeEntry('BIOPOX', 7500, '2026-05-18');
-  addExpenseEntry('Dining Out', 450, '2026-05-21');
+  _db.incomeLog  = [{ id:'a', source:'BIOPOX', amount:7500, date:'2026-05-18', note:'' }];
+  _db.expenseLog = [{ id:'b', type:'Dining Out', amount:450, date:'2026-05-21', note:'' }];
   const bal = computeCashBalance('2026-05');
   // salary 30000 + BIOPOX 7500 = 37500
   // fixed  7000+4000+500+749+749+519+99 = 13616
@@ -166,31 +200,21 @@ test('computeCashBalance: salary + income - fixed - cc - expenses', () => {
   // = 37500 - 13616 - 14273 - 450 = 9161
   assert(bal === 9161, 'expected 9161, got ' + bal);
 });
-test('setBalanceOverride overrides computation', () => {
-  seedIfEmpty();
-  setBalanceOverride(15000);
+
+test('computeCashBalance returns balanceOverride when set', () => {
+  _db.settings = { currency:'THB', month_start:1, username:'B', balance_override:15000 };
   assert(computeCashBalance('2026-05') === 15000, 'expected 15000');
 });
-test('clearBalanceOverride restores computation', () => {
-  seedIfEmpty();
-  setBalanceOverride(15000);
-  clearBalanceOverride();
-  addIncomeEntry('BIOPOX', 7500, '2026-05-18');
+
+test('computeCashBalance ignores override when balance_override is null', () => {
+  _db.settings = { currency:'THB', month_start:1, username:'B', balance_override:null };
+  // no income or expenses — should be salary - fixed - cc
   const bal = computeCashBalance('2026-05');
-  // 30000 + 7500 - 13616 - 14273 = 9611
-  assert(bal === 9611, 'expected 9611, got ' + bal);
-});
-test('addIncomeEntry clears balanceOverride', () => {
-  setBalanceOverride(99999);
-  addIncomeEntry('BIOPOX', 100, '2026-05-01');
-  assert(getSettings().balanceOverride == null, 'override not cleared');
-});
-test('addExpenseEntry clears balanceOverride', () => {
-  setBalanceOverride(99999);
-  addExpenseEntry('Shopping', 200, '2026-05-01');
-  assert(getSettings().balanceOverride == null, 'override not cleared');
+  // 30000 - 13616 - 14273 = 2111
+  assert(bal === 2111, 'expected 2111, got ' + bal);
 });
 
+// ── Results ───────────────────────────────────────────────────────────────────
 lines.push('');
 lines.push(passed + ' passed, ' + failed + ' failed');
 document.getElementById('output').innerHTML = lines.join('\n');

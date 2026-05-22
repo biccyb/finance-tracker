@@ -191,6 +191,25 @@
     .modal-chip { padding:6px 13px; font-size:12px; }
   }
   /* ── Mobile ≤480px ── */
+  /* ── Auth Overlay ──────────────────────────────────────────────────────── */
+  .auth-overlay { position:fixed; inset:0; background:rgba(245,246,250,0.97); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:1000; }
+  .auth-card { background:#fff; border:1px solid #ebebf0; border-radius:18px; padding:40px 36px; width:100%; max-width:380px; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,.08); }
+  .auth-logo-wrap { width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg,#16a34a,#22c55e); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; }
+  .auth-title { font-size:22px; font-weight:700; color:#1a1a2e; margin:0 0 6px; }
+  .auth-subtitle { font-size:13.5px; color:#64748b; margin:0 0 28px; line-height:1.5; }
+  .auth-field { text-align:left; margin-bottom:14px; }
+  .auth-field label { display:block; font-size:12px; font-weight:600; color:#64748b; margin-bottom:6px; }
+  .auth-field input { width:100%; box-sizing:border-box; border:1.5px solid #e2e8f0; border-radius:9px; padding:11px 13px; font-size:14px; color:#1a1a2e; outline:none; transition:border-color .15s; }
+  .auth-field input:focus { border-color:#16a34a; }
+  .auth-btn { width:100%; padding:12px; background:linear-gradient(135deg,#16a34a,#22c55e); color:#fff; border:none; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer; transition:opacity .15s; margin-top:4px; }
+  .auth-btn:hover { opacity:.9; }
+  .auth-btn:disabled { opacity:.6; cursor:default; }
+  .auth-btn-secondary { background:none; border:1.5px solid #e2e8f0; border-radius:9px; padding:10px 20px; font-size:13px; color:#64748b; cursor:pointer; margin-top:12px; }
+  .auth-sent-icon { font-size:36px; margin-bottom:10px; }
+  .auth-sent-text { font-size:14px; color:#1a1a2e; font-weight:600; margin:0 0 4px; }
+  .auth-sent-sub { font-size:13px; color:#64748b; margin:0 0 16px; }
+  .auth-error { font-size:12.5px; color:#ef4444; min-height:18px; margin-top:10px; }
+
   @media (max-width:480px) {
     .content { padding:12px 12px 90px; }
     .page-header { flex-direction:column; align-items:flex-start; gap:1px; margin-bottom:12px; }
@@ -223,7 +242,30 @@
   </style>
 </head>
 <body>
-  <aside class="sidebar">
+  <div class="auth-overlay" id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo-wrap">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    </div>
+    <h1 class="auth-title">FinTrack</h1>
+    <p class="auth-subtitle">Sign in to access your personal finance dashboard. We'll email you a magic link.</p>
+    <div id="auth-form">
+      <div class="auth-field">
+        <label for="auth-email-input">Email address</label>
+        <input type="email" id="auth-email-input" placeholder="you@email.com" />
+      </div>
+      <button class="auth-btn" onclick="sendMagicLink()">Send Magic Link</button>
+    </div>
+    <div id="auth-sent" style="display:none">
+      <div class="auth-sent-icon">✉️</div>
+      <p class="auth-sent-text">Check your inbox</p>
+      <p class="auth-sent-sub">We sent a login link to your email address.</p>
+      <button class="auth-btn-secondary" onclick="showAuthForm()">Use a different email</button>
+    </div>
+    <p id="auth-error" class="auth-error"></p>
+  </div>
+</div>
+<aside class="sidebar">
   <div class="sidebar-logo">
     <div class="logo-icon">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
@@ -289,11 +331,12 @@
     </div>
   </div>
   <div class="sidebar-bottom">
-    <div class="nav-item">
+    <div class="nav-item" onclick="signOut()" style="cursor:pointer;">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Log out
     </div>
   </div>
+  <div id="sidebar-user-email" style="padding:0 12px 8px;font-size:11px;color:#94a3b8;word-break:break-all;"></div>
 </aside>
 <div class="main-area">
   <header class="topbar">
@@ -315,7 +358,7 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
         <div class="notif-dot"></div>
       </div>
-      <div class="avatar">B</div>
+      <div class="avatar" id="user-avatar">B</div>
     </div>
   </header>
   <main class="content">
@@ -596,6 +639,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <!-- LOGO CONSTANTS — generated by build-logos.py, paste output here -->
   <script id="logos">
 const LOGOS = {
@@ -608,13 +652,47 @@ const LOGOS = {
 </script>
 
   <!-- DATA LAYER — Task 2 -->
+  <script id="supabase-layer">
+  // ── Credentials ──────────────────────────────────────────────────────────
+  const SUPABASE_URL      = 'https://tdjgdeloxzcycagmtvpf.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkamdkZWxveHpjeWNhZ210dnBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0MjUxNjMsImV4cCI6MjA5NTAwMTE2M30.iu153C2U-OPxZ32fCAAcinJfVMONWcKjd2cgufpQeHU';
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ── In-memory cache (synchronous reads, async writes) ────────────────────
+  const _db = {
+    incomeLog:     [],
+    expenseLog:    [],
+    installments:  [],
+    fixedExpenses: [],
+    settings:      null,
+  };
+
+  async function loadAll() {
+    const { data: { user } } = await sb.auth.getUser();
+    const uid = user.id;
+    const [il, el_, inst, fe, sett] = await Promise.all([
+      sb.from('income_log').select('*').eq('user_id', uid),
+      sb.from('expense_log').select('*').eq('user_id', uid),
+      sb.from('installments').select('*').eq('user_id', uid),
+      sb.from('fixed_expenses').select('*').eq('user_id', uid),
+      sb.from('settings').select('*').eq('user_id', uid).maybeSingle(),
+    ]);
+    _db.incomeLog     = il.data   || [];
+    _db.expenseLog    = el_.data  || [];
+    _db.installments  = inst.data || [];
+    _db.fixedExpenses = fe.data   || [];
+    _db.settings      = sett.data || null;
+  }
+  </script>
+
   <script id="data-layer">
   const KEYS = {
     INCOME_LOG:     'fintrack_income_log',
     EXPENSE_LOG:    'fintrack_expense_log',
     INSTALLMENTS:   'fintrack_installments',
     FIXED_EXPENSES: 'fintrack_fixed_expenses',
-    SETTINGS:       'fintrack_settings'
+    SETTINGS:       'fintrack_settings',
   };
 
   const SEED_INSTALLMENTS = [
@@ -639,16 +717,17 @@ const LOGOS = {
     { id:'f7', name:'iCloud Storage',   amount:99,   category:'subscription' },
   ];
 
+  // Synchronous reads — serve from in-memory _db cache populated by loadAll()
   function getData(key) {
-    try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+    switch (key) {
+      case KEYS.INCOME_LOG:     return _db.incomeLog;
+      case KEYS.EXPENSE_LOG:    return _db.expenseLog;
+      case KEYS.INSTALLMENTS:   return _db.installments;
+      case KEYS.FIXED_EXPENSES: return _db.fixedExpenses;
+      default: return null;
+    }
   }
-  function setData(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-  }
-  function seedIfEmpty() {
-    if (!getData(KEYS.INSTALLMENTS))   setData(KEYS.INSTALLMENTS,   SEED_INSTALLMENTS);
-    if (!getData(KEYS.FIXED_EXPENSES)) setData(KEYS.FIXED_EXPENSES, SEED_FIXED_EXPENSES);
-  }
+
   function getMonthKey(date = new Date()) {
     return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
   }
@@ -656,44 +735,142 @@ const LOGOS = {
     return new Date().toISOString().split('T')[0];
   }
   function getIncomeLog(month = getMonthKey()) {
-    return (getData(KEYS.INCOME_LOG) || []).filter(e => e.date.startsWith(month));
+    return _db.incomeLog.filter(e => e.date.startsWith(month));
   }
   function getExpenseLog(month = getMonthKey()) {
-    return (getData(KEYS.EXPENSE_LOG) || []).filter(e => e.date.startsWith(month));
+    return _db.expenseLog.filter(e => e.date.startsWith(month));
   }
-  function addIncomeEntry(source, amount, date, note = '') {
-    const log = getData(KEYS.INCOME_LOG) || [];
-    log.push({ id: crypto.randomUUID(), source, amount, date, note });
-    setData(KEYS.INCOME_LOG, log);
-    clearBalanceOverride();
-  }
-  function addExpenseEntry(type, amount, date, note = '') {
-    const log = getData(KEYS.EXPENSE_LOG) || [];
-    log.push({ id: crypto.randomUUID(), type, amount, date, note });
-    setData(KEYS.EXPENSE_LOG, log);
-    clearBalanceOverride();
-  }
+
+  // getSettings normalises snake_case Supabase columns to camelCase used by render layer
   function getSettings() {
-    return getData(KEYS.SETTINGS) || { currency:'THB', monthStart:1, userName:'B' };
+    const s = _db.settings;
+    if (!s) return { currency:'THB', monthStart:1, userName:'B' };
+    return {
+      currency:        s.currency    || 'THB',
+      monthStart:      s.month_start || 1,
+      userName:        s.username    || 'B',
+      balanceOverride: s.balance_override != null ? s.balance_override : undefined,
+    };
   }
-  function setBalanceOverride(amount) {
-    const s = getSettings(); s.balanceOverride = amount; setData(KEYS.SETTINGS, s);
+
+  // Async writes — update Supabase then mirror into _db
+  async function addIncomeEntry(source, amount, date, note = '') {
+    const { data: { user } } = await sb.auth.getUser();
+    const { data, error } = await sb.from('income_log')
+      .insert({ user_id: user.id, source, amount, date, note })
+      .select().single();
+    if (error) throw error;
+    _db.incomeLog.push(data);
+    await clearBalanceOverride();
   }
-  function clearBalanceOverride() {
-    const s = getSettings(); delete s.balanceOverride; setData(KEYS.SETTINGS, s);
+
+  async function addExpenseEntry(type, amount, date, note = '') {
+    const { data: { user } } = await sb.auth.getUser();
+    const { data, error } = await sb.from('expense_log')
+      .insert({ user_id: user.id, type, amount, date, note })
+      .select().single();
+    if (error) throw error;
+    _db.expenseLog.push(data);
+    await clearBalanceOverride();
+  }
+
+  async function setBalanceOverride(amount) {
+    const { data: { user } } = await sb.auth.getUser();
+    const { error } = await sb.from('settings').upsert(
+      { user_id: user.id, balance_override: amount, currency:'THB', month_start:1, username:'B' },
+      { onConflict: 'user_id' }
+    );
+    if (error) throw error;
+    if (!_db.settings) {
+      _db.settings = { user_id: user.id, currency:'THB', month_start:1, username:'B', balance_override: null };
+    }
+    _db.settings.balance_override = amount;
+  }
+
+  async function clearBalanceOverride() {
+    if (!_db.settings) return;
+    const { data: { user } } = await sb.auth.getUser();
+    const { error } = await sb.from('settings')
+      .update({ balance_override: null })
+      .eq('user_id', user.id);
+    if (error) throw error;
+    _db.settings.balance_override = null;
   }
 
   const SALARY = 30000;
   function computeCashBalance(month = getMonthKey()) {
     const settings = getSettings();
     if (settings.balanceOverride != null) return settings.balanceOverride;
-    const incomeTotal  = getIncomeLog(month).reduce((s,e) => s + e.amount, 0);
-    const expenseTotal = getExpenseLog(month).reduce((s,e) => s + e.amount, 0);
-    const fixedTotal   = (getData(KEYS.FIXED_EXPENSES) || []).reduce((s,e) => s + e.amount, 0);
-    const ccTotal      = (getData(KEYS.INSTALLMENTS)   || []).reduce((s,p) => s + p.monthly, 0);
+    const incomeTotal  = getIncomeLog(month).reduce((s, e) => s + e.amount, 0);
+    const expenseTotal = getExpenseLog(month).reduce((s, e) => s + e.amount, 0);
+    const fixedTotal   = _db.fixedExpenses.reduce((s, e) => s + e.amount, 0);
+    const ccTotal      = _db.installments.reduce((s, p) => s + p.monthly, 0);
     return SALARY + incomeTotal - fixedTotal - ccTotal - expenseTotal;
   }
+
+  // Seed static data into Supabase for a brand-new user
+  async function seedIfNew(userId) {
+    if (_db.installments.length === 0) {
+      const rows = SEED_INSTALLMENTS.map(r => ({ ...r, user_id: userId }));
+      const { error } = await sb.from('installments').insert(rows);
+      if (error) throw error;
+      _db.installments = rows;
+    }
+    if (_db.fixedExpenses.length === 0) {
+      const rows = SEED_FIXED_EXPENSES.map(r => ({ ...r, user_id: userId }));
+      const { error } = await sb.from('fixed_expenses').insert(rows);
+      if (error) throw error;
+      _db.fixedExpenses = rows;
+    }
+  }
+
+  // Offer to migrate existing localStorage data on first login
+  async function migrateFromLocalStorage(user) {
+    const lsIncome  = localStorage.getItem('fintrack_income_log');
+    const lsExpense = localStorage.getItem('fintrack_expense_log');
+    const lsSetts   = localStorage.getItem('fintrack_settings');
+    if (!lsIncome && !lsExpense && !lsSetts) return;
+    if (_db.incomeLog.length > 0 || _db.expenseLog.length > 0) {
+      localStorage.removeItem('fintrack_income_log');
+      localStorage.removeItem('fintrack_expense_log');
+      localStorage.removeItem('fintrack_settings');
+      return;
+    }
+    if (!confirm('Found locally stored data from before. Import it to your account?')) {
+      localStorage.removeItem('fintrack_income_log');
+      localStorage.removeItem('fintrack_expense_log');
+      localStorage.removeItem('fintrack_settings');
+      return;
+    }
+    const uid = user.id;
+    if (lsIncome) {
+      const entries = JSON.parse(lsIncome).map(e => ({
+        user_id: uid, source: e.source, amount: e.amount, date: e.date, note: e.note || ''
+      }));
+      if (entries.length) {
+        const { data, error } = await sb.from('income_log').insert(entries).select();
+        if (!error) _db.incomeLog = data;
+      }
+    }
+    if (lsExpense) {
+      const entries = JSON.parse(lsExpense).map(e => ({
+        user_id: uid, type: e.type, amount: e.amount, date: e.date, note: e.note || ''
+      }));
+      if (entries.length) {
+        const { data, error } = await sb.from('expense_log').insert(entries).select();
+        if (!error) _db.expenseLog = data;
+      }
+    }
+    if (lsSetts) {
+      const s = JSON.parse(lsSetts);
+      if (s.balanceOverride != null) await setBalanceOverride(s.balanceOverride);
+    }
+    localStorage.removeItem('fintrack_income_log');
+    localStorage.removeItem('fintrack_expense_log');
+    localStorage.removeItem('fintrack_settings');
+  }
   </script>
+
 
   <!-- RENDER LAYER — Tasks 4-9 -->
   <script id="render-layer">
@@ -858,15 +1035,15 @@ const LOGOS = {
     row.classList.toggle('open');
     if (!isOpen) el('balance-adjust-input').focus();
   }
-  function applyAdjust() {
+  async function applyAdjust() {
     const val = parseInt(el('balance-adjust-input').value, 10);
     if (isNaN(val) || val < 0) { alert('Enter a valid positive amount.'); return; }
-    setBalanceOverride(val);
+    await setBalanceOverride(val);
     el('adjust-row').classList.remove('open');
     renderKPIs();
   }
 
-  function saveIncome() {
+  async function saveIncome() {
     const source = el('income-source-chips').querySelector('.modal-chip.active')?.dataset.value;
     const amount = parseInt(el('income-amount-input').value, 10);
     const date   = el('income-date-input').value;
@@ -874,12 +1051,12 @@ const LOGOS = {
     if (!source)               { alert('Please select a source.');        return; }
     if (!amount || amount < 1) { alert('Please enter a valid amount.');   return; }
     if (!date)                 { alert('Please select a date.');          return; }
-    addIncomeEntry(source, amount, date, note);
+    await addIncomeEntry(source, amount, date, note);
     closeModal('income');
     refreshAll();
   }
 
-  function saveExpense() {
+  async function saveExpense() {
     const type   = el('expense-type-chips').querySelector('.modal-chip.active')?.dataset.value;
     const amount = parseInt(el('expense-amount-input').value, 10);
     const date   = el('expense-date-input').value;
@@ -887,7 +1064,7 @@ const LOGOS = {
     if (!type)               { alert('Please select an expense type.'); return; }
     if (!amount || amount < 1) { alert('Please enter a valid amount.');  return; }
     if (!date)               { alert('Please select a date.');          return; }
-    addExpenseEntry(type, amount, date, note);
+    await addExpenseEntry(type, amount, date, note);
     closeModal('expense');
     refreshAll();
   }
@@ -901,8 +1078,22 @@ const LOGOS = {
     });
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    seedIfEmpty();
+  function showAuthOverlay() { el('auth-overlay').style.display = 'flex'; }
+  function hideAuthOverlay() { el('auth-overlay').style.display = 'none'; }
+
+  function updateUserDisplay(user) {
+    const initial = (user.email || 'U')[0].toUpperCase();
+    el('user-avatar').textContent = initial;
+    const emailEl = el('sidebar-user-email');
+    if (emailEl) emailEl.textContent = user.email || '';
+  }
+
+  async function initApp(user) {
+    hideAuthOverlay();
+    await loadAll();
+    await migrateFromLocalStorage(user);
+    await seedIfNew(user.id);
+    updateUserDisplay(user);
     renderDate();
     renderKPIs();
     renderInstallments();
@@ -914,6 +1105,47 @@ const LOGOS = {
     el('balance-adjust-input').addEventListener('keydown', e => {
       if (e.key === 'Enter')  applyAdjust();
       if (e.key === 'Escape') el('adjust-row').classList.remove('open');
+    });
+  }
+
+  async function sendMagicLink() {
+    const email = el('auth-email-input').value.trim();
+    if (!email) { el('auth-error').textContent = 'Please enter your email.'; return; }
+    el('auth-error').textContent = '';
+    const btn = document.querySelector('#auth-overlay .auth-btn');
+    btn.textContent = 'Sending…';
+    btn.disabled = true;
+    const { error } = await sb.auth.signInWithOtp({ email });
+    btn.textContent = 'Send Magic Link';
+    btn.disabled = false;
+    if (error) { el('auth-error').textContent = error.message; return; }
+    el('auth-form').style.display = 'none';
+    el('auth-sent').style.display = 'block';
+  }
+
+  function showAuthForm() {
+    el('auth-form').style.display = 'block';
+    el('auth-sent').style.display = 'none';
+    el('auth-error').textContent = '';
+  }
+
+  async function signOut() {
+    await sb.auth.signOut();
+    location.reload();
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    showAuthOverlay();
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      await initApp(session.user);
+    }
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        await initApp(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        location.reload();
+      }
     });
   });
   </script>
