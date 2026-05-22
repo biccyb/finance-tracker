@@ -786,6 +786,21 @@ const LOGOS = {
     renderIncomeSources();
     renderChart();
   }
+
+  function toggleAdjust() {
+    const row    = el('adjust-row');
+    const isOpen = row.classList.contains('open');
+    row.classList.toggle('open');
+    if (!isOpen) el('balance-adjust-input').focus();
+  }
+  function applyAdjust() {
+    const val = parseInt(el('balance-adjust-input').value, 10);
+    if (isNaN(val) || val < 0) { alert('Enter a valid positive amount.'); return; }
+    setBalanceOverride(val);
+    el('adjust-row').classList.remove('open');
+    renderKPIs();
+  }
+
   function saveIncome() {
     const source = el('income-source-chips').querySelector('.modal-chip.active')?.dataset.value;
     const amount = parseInt(el('income-amount-input').value, 10);
@@ -831,7 +846,10 @@ const LOGOS = {
     renderFixedExpenses();
     initChipGroups();
     initModalBackdrops();
-    // further calls added in Tasks 10-11
+    el('balance-adjust-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter')  applyAdjust();
+      if (e.key === 'Escape') el('adjust-row').classList.remove('open');
+    });
   });
   </script>
 </body>
