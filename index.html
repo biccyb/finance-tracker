@@ -89,6 +89,26 @@
     .adjust-trigger { font-size:10px; font-weight:600; color:var(--green); background:var(--green-tint); border:1px solid var(--green-border); border-radius:6px; padding:2px 7px; cursor:pointer; white-space:nowrap; }
     .adjust-row { display:none; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-light); }
     .adjust-row.open { display:flex; }
+  .main-grid { display:grid; grid-template-columns:1fr 1.2fr; gap:14px; }
+  .right-col  { display:flex; flex-direction:column; gap:14px; }
+  .card-chips { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+  .card-chip  { border:1px solid var(--border); border-radius:10px; padding:9px 10px; display:flex; flex-direction:column; gap:4px; cursor:pointer; }
+  .card-chip:hover { border-color:#c0e0d0; }
+  .chip-logo  { height:20px; object-fit:contain; max-width:64px; }
+  .chip-amount { font-size:13px; font-weight:800; }
+  .chip-label { font-size:10px; color:var(--text-3); }
+  .inst-group { margin-bottom:10px; }
+  .inst-group-header { display:flex; align-items:center; gap:8px; padding:6px 0 4px; border-bottom:1px solid var(--border-light); margin-bottom:6px; }
+  .inst-group-logo { height:18px; object-fit:contain; max-width:60px; }
+  .inst-group-total { margin-left:auto; font-size:11px; font-weight:700; color:var(--red); }
+  .inst-row { display:flex; align-items:center; gap:8px; padding:5px 0; }
+  .inst-name { font-size:11.5px; font-weight:600; flex:0 0 82px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .inst-bar-wrap { flex:1; height:6px; background:#f0f0f5; border-radius:3px; overflow:hidden; }
+  .inst-bar { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--green),var(--green-2)); }
+  .inst-progress { font-size:10px; color:var(--text-3); flex:0 0 36px; text-align:center; }
+  .inst-amount { font-size:11px; font-weight:700; color:var(--red); flex:0 0 52px; text-align:right; }
+  .done-badge { font-size:9px; font-weight:700; background:#fff3cd; color:#b45309; border-radius:20px; padding:1px 6px; white-space:nowrap; flex-shrink:0; }
+  .inst-footer { display:flex; align-items:center; justify-content:space-between; padding-top:10px; margin-top:2px; border-top:1px solid var(--border-light); }
   </style>
 </head>
 <body>
@@ -278,7 +298,33 @@
         <div class="kpi-range">Across <span id="kpi-cc-count">3 cards · 9 plans</span></div>
       </div>
     </div>
-    <!-- MAIN GRID inserted in Tasks 5-8 -->
+    <div class="main-grid">
+      <!-- LEFT: CC INSTALLMENT TRACKER -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            CC Installment Tracker
+          </div>
+          <span class="dots-menu">...</span>
+        </div>
+        <div class="card-chips">
+          <div class="card-chip"><img id="chip-logo-KBANK" class="chip-logo" alt="KBANK"/><div class="chip-amount" id="chip-total-KBANK">-</div><div class="chip-label" id="chip-count-KBANK">-</div></div>
+          <div class="card-chip"><img id="chip-logo-UOB"   class="chip-logo" alt="UOB"/><div class="chip-amount" id="chip-total-UOB">-</div><div class="chip-label" id="chip-count-UOB">-</div></div>
+          <div class="card-chip"><img id="chip-logo-KTC"   class="chip-logo" alt="KTC"/><div class="chip-amount" id="chip-total-KTC">-</div><div class="chip-label" id="chip-count-KTC">-</div></div>
+        </div>
+        <div id="inst-groups"></div>
+        <div class="inst-footer">
+          <span style="font-size:11px;color:var(--text-3);">Total monthly installments</span>
+          <span style="font-size:15px;font-weight:800;color:#d97706;" id="inst-total">-</span>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="right-col">
+        <!-- cards added in Tasks 7 and 8 -->
+      </div>
+    </div>
   </main>
 </div>
 
@@ -405,6 +451,54 @@ const LOGOS = {
     el('kpi-cc-installments').textContent  = fmt(ccTotal);
     el('kpi-cc-count').textContent = '3 cards · ' + installments.length + ' plans';
   }
+
+  const CARD_META = {
+    KBANK: { logoKey:'KBANK', label:'KBANK Wisdom', countLabel:'plans' },
+    UOB:   { logoKey:'UOB',   label:'UOB Premier',  countLabel:'loans' },
+    KTC:   { logoKey:'KTC',   label:'KTC X',         countLabel:'plans' },
+  };
+
+  function renderInstallments() {
+    const installments = getData(KEYS.INSTALLMENTS) || [];
+    el('chip-logo-KBANK').src = LOGOS.KBANK;
+    el('chip-logo-UOB').src   = LOGOS.UOB;
+    el('chip-logo-KTC').src   = LOGOS.KTC;
+
+    Object.keys(CARD_META).forEach(cardKey => {
+      const plans   = installments.filter(p => p.card === cardKey);
+      const monthly = plans.reduce((s,p) => s + p.monthly, 0);
+      el('chip-total-' + cardKey).textContent = '\u0e3f' + fmt(monthly) + '/mo';
+      el('chip-count-' + cardKey).textContent = plans.length + ' ' + CARD_META[cardKey].countLabel;
+    });
+
+    let groupsHTML = '';
+    Object.entries(CARD_META).forEach(([cardKey, meta]) => {
+      const plans     = installments.filter(p => p.card === cardKey);
+      if (!plans.length) return;
+      const cardTotal = plans.reduce((s,p) => s + p.monthly, 0);
+      let rowsHTML = '';
+      plans.forEach(p => {
+        const pct      = Math.round((p.paid / p.total) * 100);
+        const doneNext = (p.total - p.paid) === 1;
+        rowsHTML += '<div class="inst-row">';
+        rowsHTML += '<span class="inst-name">' + p.name + '</span>';
+        rowsHTML += '<div class="inst-bar-wrap"><div class="inst-bar" style="width:' + pct + '%"></div></div>';
+        rowsHTML += '<span class="inst-progress">' + p.paid + '/' + p.total + '</span>';
+        if (doneNext) rowsHTML += '<span class="done-badge">Done next!</span>';
+        rowsHTML += '<span class="inst-amount">\u0e3f' + fmt(p.monthly) + '</span></div>';
+      });
+      groupsHTML += '<div class="inst-group">';
+      groupsHTML += '<div class="inst-group-header">';
+      groupsHTML += '<img src="' + LOGOS[meta.logoKey] + '" class="inst-group-logo" alt="' + meta.label + '" />';
+      groupsHTML += '<span style="font-size:11px;font-weight:700;">' + meta.label + '</span>';
+      groupsHTML += '<span class="inst-group-total">\u0e3f' + fmt(cardTotal) + '/mo</span>';
+      groupsHTML += '</div>' + rowsHTML + '</div>';
+    });
+    el('inst-groups').innerHTML = groupsHTML;
+
+    const total = installments.reduce((s,p) => s + p.monthly, 0);
+    el('inst-total').textContent = '\u0e3f' + fmt(total) + '/mo';
+  }
   </script>
 
   <!-- APP INIT — Task 10 -->
@@ -419,7 +513,8 @@ const LOGOS = {
     seedIfEmpty();
     renderDate();
     renderKPIs();
-    // further calls added in Tasks 5-11
+    renderInstallments();
+    // further calls added in Tasks 7-11
   });
   </script>
 </body>
