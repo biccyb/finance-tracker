@@ -109,6 +109,28 @@
   .inst-amount { font-size:11px; font-weight:700; color:var(--red); flex:0 0 52px; text-align:right; }
   .done-badge { font-size:9px; font-weight:700; background:#fff3cd; color:#b45309; border-radius:20px; padding:1px 6px; white-space:nowrap; flex-shrink:0; }
   .inst-footer { display:flex; align-items:center; justify-content:space-between; padding-top:10px; margin-top:2px; border-top:1px solid var(--border-light); }
+  .chart-legend { display:flex; gap:14px; margin-bottom:10px; font-size:11px; color:var(--text-2); }
+  .legend-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
+  .chart-wrap { display:flex; align-items:flex-end; gap:6px; height:100px; }
+  .bar-col { display:flex; flex-direction:column; align-items:center; flex:1; }
+  .bar-pair { display:flex; align-items:flex-end; gap:2px; flex:1; }
+  .bar { width:100%; max-width:22px; min-width:10px; border-radius:4px 4px 0 0; }
+  .bar.income { background:linear-gradient(180deg,#22c55e,#16a34a); }
+  .bar-lbl { font-size:9px; color:var(--text-4); margin-top:5px; }
+  .chart-tooltip-wrap { position:relative; }
+  .chart-tip { position:absolute; bottom:calc(100% + 7px); left:50%; transform:translateX(-50%); background:var(--text-1); color:#fff; padding:4px 8px; border-radius:6px; font-size:10px; font-weight:600; white-space:nowrap; }
+  .chart-tip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:3px solid transparent; border-top-color:var(--text-1); }
+  .dot-marker { position:absolute; top:-5px; left:50%; transform:translateX(-50%); width:9px; height:9px; background:#fff; border:2.5px solid var(--green); border-radius:50%; }
+  .income-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--bg); }
+  .income-item:last-child { border-bottom:none; }
+  .income-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .income-info { flex:1; }
+  .income-name { font-size:12px; font-weight:600; }
+  .income-type { font-size:10px; color:var(--text-3); }
+  .income-amount { font-size:13px; font-weight:700; color:var(--green); }
+  .income-amount.variable { color:var(--amber); }
+  .income-amount.peptide  { color:var(--purple); }
+  .income-amount.placeholder { color:var(--text-4); font-weight:500; }
   </style>
 </head>
 <body>
@@ -322,7 +344,65 @@
 
       <!-- RIGHT COLUMN -->
       <div class="right-col">
-        <!-- cards added in Tasks 7 and 8 -->
+        <!-- INCOME OVERVIEW CHART -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              Income Overview 2026
+            </div>
+            <span class="dots-menu">...</span>
+          </div>
+          <div class="chart-legend"><span><span class="legend-dot" style="background:var(--green);"></span> Earnings</span></div>
+          <div class="chart-wrap">
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:55px;"></div></div><div class="bar-lbl">Jan</div></div>
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:62px;"></div></div><div class="bar-lbl">Feb</div></div>
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:70px;"></div></div><div class="bar-lbl">Mar</div></div>
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:58px;"></div></div><div class="bar-lbl">Apr</div></div>
+            <div class="bar-col chart-tooltip-wrap" id="chart-may-col">
+              <div class="chart-tip" id="chart-may-tip">฿30,000</div>
+              <div class="bar-pair" style="position:relative;">
+                <div class="bar income" id="chart-may-bar" style="height:60px;box-shadow:0 4px 14px #16a34a33;"><div class="dot-marker"></div></div>
+              </div>
+              <div class="bar-lbl" style="color:var(--green);font-weight:700;">May</div>
+            </div>
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:50px;opacity:.35;"></div></div><div class="bar-lbl" style="opacity:.35;">Jun</div></div>
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:45px;opacity:.3;"></div></div><div class="bar-lbl" style="opacity:.3;">Jul</div></div>
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:40px;opacity:.25;"></div></div><div class="bar-lbl" style="opacity:.25;">Aug</div></div>
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:35px;opacity:.2;"></div></div><div class="bar-lbl" style="opacity:.2;">Sep</div></div>
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:28px;opacity:.15;"></div></div><div class="bar-lbl" style="opacity:.15;">Oct</div></div>
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:22px;opacity:.12;"></div></div><div class="bar-lbl" style="opacity:.12;">Nov</div></div>
+            <div class="bar-col"><div class="bar-pair"><div class="bar income" style="height:16px;opacity:.1;"></div></div><div class="bar-lbl" style="opacity:.1;">Dec</div></div>
+          </div>
+        </div>
+
+        <!-- INCOME SOURCES -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              Income Sources
+            </div>
+            <span class="dots-menu">...</span>
+          </div>
+          <div class="income-item">
+            <div class="income-dot" style="background:var(--green);"></div>
+            <div class="income-info"><div class="income-name">Salary</div><div class="income-type">Fixed · monthly</div></div>
+            <div class="income-amount">฿30,000</div>
+          </div>
+          <div class="income-item">
+            <div class="income-dot" style="background:var(--amber);"></div>
+            <div class="income-info"><div class="income-name">BIOPOX</div><div class="income-type">Variable business income</div></div>
+            <div class="income-amount variable" id="income-biopox">฿5k–10k</div>
+          </div>
+          <div class="income-item">
+            <div class="income-dot" style="background:var(--purple);"></div>
+            <div class="income-info"><div class="income-name">Peptide</div><div class="income-type">Variable business income</div></div>
+            <div class="income-amount peptide" id="income-peptide">฿6k–18k</div>
+          </div>
+        </div>
+
+        <!-- Task 8 card goes here -->
       </div>
     </div>
   </main>
@@ -499,6 +579,30 @@ const LOGOS = {
     const total = installments.reduce((s,p) => s + p.monthly, 0);
     el('inst-total').textContent = '\u0e3f' + fmt(total) + '/mo';
   }
+
+  function renderIncomeSources() {
+    const month     = getMonthKey();
+    const incomeLog = getIncomeLog(month);
+    const sources = [
+      { source:'BIOPOX', elId:'income-biopox', range:'\u0e3f5k\u201310k', cls:'income-amount variable' },
+      { source:'Peptide', elId:'income-peptide', range:'\u0e3f6k\u201318k', cls:'income-amount peptide' },
+    ];
+    sources.forEach(({ source, elId, range, cls }) => {
+      const total = incomeLog.filter(e => e.source === source).reduce((s,e) => s + e.amount, 0);
+      const node = el(elId);
+      if (total > 0) { node.textContent = '\u0e3f' + fmt(total); node.className = cls; }
+      else           { node.textContent = range; node.className = 'income-amount placeholder'; }
+    });
+  }
+
+  function renderChart() {
+    const month    = getMonthKey();
+    const varTotal = getIncomeLog(month).reduce((s,e) => s + e.amount, 0);
+    const total    = SALARY + varTotal;
+    const height   = Math.max(Math.round((total / 90000) * 88), 30);
+    el('chart-may-bar').style.height = height + 'px';
+    el('chart-may-tip').textContent  = '\u0e3f' + fmt(total);
+  }
   </script>
 
   <!-- APP INIT — Task 10 -->
@@ -514,7 +618,9 @@ const LOGOS = {
     renderDate();
     renderKPIs();
     renderInstallments();
-    // further calls added in Tasks 7-11
+    renderIncomeSources();
+    renderChart();
+    // further calls added in Tasks 8-11
   });
   </script>
 </body>
