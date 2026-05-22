@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>FinTrack Data Tests</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #f5f6fa; }
+    pre  { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; }
+    .pass { color: #16a34a; } .fail { color: #ef4444; font-weight: bold; }
+  </style>
+</head>
+<body>
+<h2>FinTrack Data Layer Tests</h2>
+<pre id="output">Running...</pre>
+<script>
+// localStorage mock
+const _store = {};
+const localStorage = {
+  getItem:    k =>    _store[k] ?? null,
+  setItem:    (k,v) => { _store[k] = v; },
+  removeItem: k =>    { delete _store[k]; },
+  clear:      () =>   { Object.keys(_store).forEach(k => delete _store[k]); }
+};
+
+// PASTE_DATA_LAYER_HERE — copy contents of script#data-layer from index.html
+const KEYS = {
+  INCOME_LOG:     'fintrack_income_log',
+  EXPENSE_LOG:    'fintrack_expense_log',
+  INSTALLMENTS:   'fintrack_installments',
+  FIXED_EXPENSES: 'fintrack_fixed_expenses',
+  SETTINGS:       'fintrack_settings'
+};
+
+const SEED_INSTALLMENTS = [
+  { id:'i1', name:'Cash Loan 1',  card:'UOB',   monthly:1968, paid:6,  total:11 },
+  { id:'i2', name:'Cash Loan 2',  card:'UOB',   monthly:2236, paid:1,  total:11 },
+  { id:'i3', name:'Cash Loan 3',  card:'UOB',   monthly:2236, paid:1,  total:11 },
+  { id:'i4', name:'Deepcharts',   card:'KTC',   monthly:1072, paid:5,  total:10 },
+  { id:'i5', name:'Fabervaale',   card:'KTC',   monthly:3419, paid:4,  total:10 },
+  { id:'i6', name:'ATAS',         card:'KBANK', monthly:757,  paid:1,  total:10 },
+  { id:'i7', name:'Tradezella',   card:'KBANK', monthly:790,  paid:3,  total:10 },
+  { id:'i8', name:'Tradingview',  card:'KBANK', monthly:825,  paid:6,  total:10 },
+  { id:'i9', name:'Petheal',      card:'KBANK', monthly:970,  paid:9,  total:10 },
+];
+
+const SEED_FIXED_EXPENSES = [
+  { id:'f1', name:'Maid Salary',      amount:7000, category:'household'    },
+  { id:'f2', name:'Electricity',      amount:4000, category:'household'    },
+  { id:'f3', name:'Water Bill',       amount:500,  category:'household'    },
+  { id:'f4', name:'Phone Bill',       amount:749,  category:'household'    },
+  { id:'f5', name:'Wifi Bill',        amount:749,  category:'household'    },
+  { id:'f6', name:'YouTube Premium',  amount:519,  category:'subscription' },
+  { id:'f7', name:'iCloud Storage',   amount:99,   category:'subscription' },
+];
+
+function getData(key) {
+  try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+}
+function setData(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+function seedIfEmpty() {
+  if (!getData(KEYS.INSTALLMENTS))   setData(KEYS.INSTALLMENTS,   SEED_INSTALLMENTS);
+  if (!getData(KEYS.FIXED_EXPENSES)) setData(KEYS.FIXED_EXPENSES, SEED_FIXED_EXPENSES);
+}
+function getMonthKey(date = new Date()) {
+  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+}
+function todayISO() {
+  return new Date().toISOString().split('T')[0];
+}
+function getIncomeLog(month = getMonthKey()) {
+  return (getData(KEYS.INCOME_LOG) || []).filter(e => e.date.startsWith(month));
+}
+function getExpenseLog(month = getMonthKey()) {
+  return (getData(KEYS.EXPENSE_LOG) || []).filter(e => e.date.startsWith(month));
+}
+function addIncomeEntry(source, amount, date, note = '') {
+  const log = getData(KEYS.INCOME_LOG) || [];
+  log.push({ id: crypto.randomUUID(), source, amount, date, note });
+  setData(KEYS.INCOME_LOG, log);
+  clearBalanceOverride();
+}
+function addExpenseEntry(type, amount, date, note = '') {
+  const log = getData(KEYS.EXPENSE_LOG) || [];
+  log.push({ id: crypto.randomUUID(), type, amount, date, note });
+  setData(KEYS.EXPENSE_LOG, log);
+  clearBalanceOverride();
+}
+function getSettings() {
+  return getData(KEYS.SETTINGS) || { currency:'THB', monthStart:1, userName:'B' };
+}
+function setBalanceOverride(amount) {
+  const s = getSettings(); s.balanceOverride = amount; setData(KEYS.SETTINGS, s);
+}
+function clearBalanceOverride() {
+  const s = getSettings(); delete s.balanceOverride; setData(KEYS.SETTINGS, s);
+}
+
+const SALARY = 30000;
+function computeCashBalance(month = getMonthKey()) {
+  const settings = getSettings();
+  if (settings.balanceOverride != null) return settings.balanceOverride;
+  const incomeTotal  = getIncomeLog(month).reduce((s,e) => s + e.amount, 0);
+  const expenseTotal = getExpenseLog(month).reduce((s,e) => s + e.amount, 0);
+  const fixedTotal   = (getData(KEYS.FIXED_EXPENSES) || []).reduce((s,e) => s + e.amount, 0);
+  const ccTotal      = (getData(KEYS.INSTALLMENTS)   || []).reduce((s,p) => s + p.monthly, 0);
+  return SALARY + incomeTotal - fixedTotal - ccTotal - expenseTotal;
+}
+
+// Test runner
+let passed = 0, failed = 0;
+const lines = [];
+function test(name, fn) {
+  localStorage.clear();
+  try { fn(); passed++; lines.push('<span class="pass">OK ' + name + '</span>'); }
+  catch(e) { failed++; lines.push('<span class="fail">FAIL ' + name + ': ' + e.message + '</span>'); }
+}
+function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
+
+test('seedIfEmpty populates 9 installments', () => {
+  seedIfEmpty();
+  assert(getData(KEYS.INSTALLMENTS).length === 9, 'got ' + getData(KEYS.INSTALLMENTS).length);
+});
+test('seedIfEmpty populates 7 fixed expenses', () => {
+  seedIfEmpty();
+  assert(getData(KEYS.FIXED_EXPENSES).length === 7, 'got ' + getData(KEYS.FIXED_EXPENSES).length);
+});
+test('seedIfEmpty does not overwrite existing data', () => {
+  setData(KEYS.INSTALLMENTS, [{ id:'x', name:'custom', card:'UOB', monthly:999, paid:1, total:5 }]);
+  seedIfEmpty();
+  assert(getData(KEYS.INSTALLMENTS).length === 1, 'overwrote existing data');
+});
+test('getMonthKey returns YYYY-MM', () => {
+  assert(getMonthKey(new Date('2026-05-22')) === '2026-05', 'got ' + getMonthKey(new Date('2026-05-22')));
+});
+test('addIncomeEntry saves to log', () => {
+  addIncomeEntry('BIOPOX', 7500, '2026-05-18', 'batch 1');
+  const log = getData(KEYS.INCOME_LOG);
+  assert(log.length === 1);
+  assert(log[0].source === 'BIOPOX');
+  assert(log[0].amount === 7500);
+});
+test('getIncomeLog filters by month', () => {
+  addIncomeEntry('BIOPOX', 7500, '2026-05-18');
+  addIncomeEntry('Peptide', 12000, '2026-04-10');
+  const may = getIncomeLog('2026-05');
+  assert(may.length === 1, 'expected 1, got ' + may.length);
+  assert(may[0].source === 'BIOPOX');
+});
+test('addExpenseEntry saves to log', () => {
+  addExpenseEntry('Dining Out', 450, '2026-05-21', 'lunch');
+  const log = getData(KEYS.EXPENSE_LOG);
+  assert(log.length === 1);
+  assert(log[0].type === 'Dining Out');
+  assert(log[0].amount === 450);
+});
+test('computeCashBalance: salary + income - fixed - cc - expenses', () => {
+  seedIfEmpty();
+  addIncomeEntry('BIOPOX', 7500, '2026-05-18');
+  addExpenseEntry('Dining Out', 450, '2026-05-21');
+  const bal = computeCashBalance('2026-05');
+  // salary 30000 + BIOPOX 7500 = 37500
+  // fixed  7000+4000+500+749+749+519+99 = 13616
+  // cc     1968+2236+2236+1072+3419+757+790+825+970 = 14273
+  // misc   450
+  // = 37500 - 13616 - 14273 - 450 = 9161
+  assert(bal === 9161, 'expected 9161, got ' + bal);
+});
+test('setBalanceOverride overrides computation', () => {
+  seedIfEmpty();
+  setBalanceOverride(15000);
+  assert(computeCashBalance('2026-05') === 15000, 'expected 15000');
+});
+test('clearBalanceOverride restores computation', () => {
+  seedIfEmpty();
+  setBalanceOverride(15000);
+  clearBalanceOverride();
+  addIncomeEntry('BIOPOX', 7500, '2026-05-18');
+  const bal = computeCashBalance('2026-05');
+  // 30000 + 7500 - 13616 - 14273 = 9611
+  assert(bal === 9611, 'expected 9611, got ' + bal);
+});
+test('addIncomeEntry clears balanceOverride', () => {
+  setBalanceOverride(99999);
+  addIncomeEntry('BIOPOX', 100, '2026-05-01');
+  assert(getSettings().balanceOverride == null, 'override not cleared');
+});
+test('addExpenseEntry clears balanceOverride', () => {
+  setBalanceOverride(99999);
+  addExpenseEntry('Shopping', 200, '2026-05-01');
+  assert(getSettings().balanceOverride == null, 'override not cleared');
+});
+
+lines.push('');
+lines.push(passed + ' passed, ' + failed + ' failed');
+document.getElementById('output').innerHTML = lines.join('\n');
+</script>
+</body>
+</html>

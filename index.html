@@ -18,6 +18,90 @@
 
   <!-- DATA LAYER — Task 2 -->
   <script id="data-layer">
+  const KEYS = {
+    INCOME_LOG:     'fintrack_income_log',
+    EXPENSE_LOG:    'fintrack_expense_log',
+    INSTALLMENTS:   'fintrack_installments',
+    FIXED_EXPENSES: 'fintrack_fixed_expenses',
+    SETTINGS:       'fintrack_settings'
+  };
+
+  const SEED_INSTALLMENTS = [
+    { id:'i1', name:'Cash Loan 1',  card:'UOB',   monthly:1968, paid:6,  total:11 },
+    { id:'i2', name:'Cash Loan 2',  card:'UOB',   monthly:2236, paid:1,  total:11 },
+    { id:'i3', name:'Cash Loan 3',  card:'UOB',   monthly:2236, paid:1,  total:11 },
+    { id:'i4', name:'Deepcharts',   card:'KTC',   monthly:1072, paid:5,  total:10 },
+    { id:'i5', name:'Fabervaale',   card:'KTC',   monthly:3419, paid:4,  total:10 },
+    { id:'i6', name:'ATAS',         card:'KBANK', monthly:757,  paid:1,  total:10 },
+    { id:'i7', name:'Tradezella',   card:'KBANK', monthly:790,  paid:3,  total:10 },
+    { id:'i8', name:'Tradingview',  card:'KBANK', monthly:825,  paid:6,  total:10 },
+    { id:'i9', name:'Petheal',      card:'KBANK', monthly:970,  paid:9,  total:10 },
+  ];
+
+  const SEED_FIXED_EXPENSES = [
+    { id:'f1', name:'Maid Salary',      amount:7000, category:'household'    },
+    { id:'f2', name:'Electricity',      amount:4000, category:'household'    },
+    { id:'f3', name:'Water Bill',       amount:500,  category:'household'    },
+    { id:'f4', name:'Phone Bill',       amount:749,  category:'household'    },
+    { id:'f5', name:'Wifi Bill',        amount:749,  category:'household'    },
+    { id:'f6', name:'YouTube Premium',  amount:519,  category:'subscription' },
+    { id:'f7', name:'iCloud Storage',   amount:99,   category:'subscription' },
+  ];
+
+  function getData(key) {
+    try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+  }
+  function setData(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+  function seedIfEmpty() {
+    if (!getData(KEYS.INSTALLMENTS))   setData(KEYS.INSTALLMENTS,   SEED_INSTALLMENTS);
+    if (!getData(KEYS.FIXED_EXPENSES)) setData(KEYS.FIXED_EXPENSES, SEED_FIXED_EXPENSES);
+  }
+  function getMonthKey(date = new Date()) {
+    return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+  }
+  function todayISO() {
+    return new Date().toISOString().split('T')[0];
+  }
+  function getIncomeLog(month = getMonthKey()) {
+    return (getData(KEYS.INCOME_LOG) || []).filter(e => e.date.startsWith(month));
+  }
+  function getExpenseLog(month = getMonthKey()) {
+    return (getData(KEYS.EXPENSE_LOG) || []).filter(e => e.date.startsWith(month));
+  }
+  function addIncomeEntry(source, amount, date, note = '') {
+    const log = getData(KEYS.INCOME_LOG) || [];
+    log.push({ id: crypto.randomUUID(), source, amount, date, note });
+    setData(KEYS.INCOME_LOG, log);
+    clearBalanceOverride();
+  }
+  function addExpenseEntry(type, amount, date, note = '') {
+    const log = getData(KEYS.EXPENSE_LOG) || [];
+    log.push({ id: crypto.randomUUID(), type, amount, date, note });
+    setData(KEYS.EXPENSE_LOG, log);
+    clearBalanceOverride();
+  }
+  function getSettings() {
+    return getData(KEYS.SETTINGS) || { currency:'THB', monthStart:1, userName:'B' };
+  }
+  function setBalanceOverride(amount) {
+    const s = getSettings(); s.balanceOverride = amount; setData(KEYS.SETTINGS, s);
+  }
+  function clearBalanceOverride() {
+    const s = getSettings(); delete s.balanceOverride; setData(KEYS.SETTINGS, s);
+  }
+
+  const SALARY = 30000;
+  function computeCashBalance(month = getMonthKey()) {
+    const settings = getSettings();
+    if (settings.balanceOverride != null) return settings.balanceOverride;
+    const incomeTotal  = getIncomeLog(month).reduce((s,e) => s + e.amount, 0);
+    const expenseTotal = getExpenseLog(month).reduce((s,e) => s + e.amount, 0);
+    const fixedTotal   = (getData(KEYS.FIXED_EXPENSES) || []).reduce((s,e) => s + e.amount, 0);
+    const ccTotal      = (getData(KEYS.INSTALLMENTS)   || []).reduce((s,p) => s + p.monthly, 0);
+    return SALARY + incomeTotal - fixedTotal - ccTotal - expenseTotal;
+  }
   </script>
 
   <!-- RENDER LAYER — Tasks 4-9 -->
